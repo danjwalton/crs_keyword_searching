@@ -6,9 +6,9 @@ lapply(required.packages, require, character.only = T)
 wd <- "G:/My Drive/Work/GitHub/crs_keyword_searching/"
 setwd(wd)
 
-load("project-data/crs 2012-2013.RData")
-load("project-data/crs 2014-2015.RData")
-load("project-data/crs 2016-2017.RData")
+load("project_data/crs 2012-2013.RData")
+load("project_data/crs 2014-2015.RData")
+load("project_data/crs 2016-2017.RData")
 
 crs <- rbind(crs.2012.2013, crs.2014.2015, crs.2016.2017)
 rm(list=c("crs.2012.2013", "crs.2014.2015", "crs.2016.2017"))
