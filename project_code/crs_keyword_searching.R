@@ -1,58 +1,58 @@
 #danjwalton 2019
 
-required.packages <- c("reshape2", "ggplot2", "data.table")
+required.packages <- c("data.table")
 lapply(required.packages, require, character.only = T)
 
 wd <- "G:/My Drive/Work/GitHub/crs_keyword_searching/"
 setwd(wd)
 
-load("project_data/crs 2012-2013.RData")
-load("project_data/crs 2014-2015.RData")
-load("project_data/crs 2016-2017.RData")
-
-crs <- rbind(crs.2012.2013, crs.2014.2015, crs.2016.2017)
-rm(list=c("crs.2012.2013", "crs.2014.2015", "crs.2016.2017"))
+source("project_code/load_and_join.R")
+crs <- load_crs()
 
 keep <- c(
-  "crs_id"
+  "CRSid"
   ,
-  "project_number"
+  "ProjectNumber"
   ,
-  "year"
+  "Year"
   ,
-  "aid_type"
+  "Aid_t"
   ,
-  "flow_name"
+  "FlowName"
   ,
-  "donor_name"
+  "DonorName"
   ,
-  "recipient_name"
+  "RecipientName"
   ,
-  "usd_commitment_deflated"
+  "USD_Commitment_Defl"
   ,
-  "usd_disbursement_deflated"
+  "USD_Disbursement_Defl"
   ,
-  "purpose_name"
+  "PurposeName"
   ,
-  "project_title"
+  "ProjectTitle"
   ,
-  "short_description"
+  "ShortDescription"
   ,
-  "long_description"
+  "LongDescription"
   ,
-  "gender"
+  "Gender"
+  ,
+  "ChannelReportedName"
 )
 
 crs <- crs[, ..keep]
 crs <- crs[
-  flow_name == "ODA Loans" 
+  FlowName == "ODA Loans" 
   |
-    flow_name == "ODA Grants"
+    FlowName == "ODA Grants"
   | 
-    flow_name == "Equity Investment"
+    FlowName == "Equity Investment"
   | 
-    flow_name == "Private Development Finance"
+    FlowName == "Private Development Finance"
   ]
+
+crs <- crs[as.character(Year) >= 2014]
 
 major.keywords <- c(
   #"keyword1"
@@ -79,31 +79,35 @@ disqualifying.sectors <- c(
 )
 
 crs$relevance <- "None"
-crs[grepl(paste(minor.keywords, collapse = "|"), tolower(paste(crs$project_title, crs$short_description, crs$long_description)))]$relevance <- "Minor"
-crs[grepl(paste(major.keywords, collapse = "|"), tolower(crs$long_description))]$relevance <- "Minor"
-crs[grepl(paste(major.keywords, collapse = "|"), tolower(paste(crs$short_description, crs$project_title)))]$relevance <- "Major"
+crs[grepl(paste(minor.keywords, collapse = "|"), tolower(paste(crs$ProjectTitle, crs$ShortDescription, crs$LongDescription)))]$relevance <- "Minor"
+crs[grepl(paste(major.keywords, collapse = "|"), tolower(crs$LongDescription))]$relevance <- "Minor"
+crs[grepl(paste(major.keywords, collapse = "|"), tolower(paste(crs$ShortDescription, crs$ProjectTitle)))]$relevance <- "Major"
 
 crs$check <- "No"
 crs[relevance == "Minor"]$check <- "potential false positive"
-crs[relevance != "None"][purpose_name %in% disqualifying.sectors]$check <- "potential false negative"
-crs[relevance != "None"][grepl(paste(disqualifying.keywords, collapse = "|"), tolower(paste(crs[relevance != "None"]$project_title, crs[relevance != "None"]$short_description, crs[relevance != "None"]$long_description)))]$check <- "potential false negative"
+crs[relevance != "None"][PurposeName %in% disqualifying.sectors]$check <- "potential false negative"
+crs[relevance != "None"][grepl(paste(disqualifying.keywords, collapse = "|"), tolower(paste(crs[relevance != "None"]$ProjectTitle, crs[relevance != "None"]$ShortDescription, crs[relevance != "None"]$LongDescription)))]$check <- "potential false negative"
 
-crs[relevance != "None"][grepl(paste(disqualifying.keywords, collapse = "|"), tolower(paste(crs[relevance != "None"]$project_title, crs[relevance != "None"]$short_description, crs[relevance != "None"]$long_description)))]$relevance <- "None"
-crs[relevance != "None"][purpose_name %in% disqualifying.sectors]$relevance <- "None"
+crs[relevance != "None"][grepl(paste(disqualifying.keywords, collapse = "|"), tolower(paste(crs[relevance != "None"]$ProjectTitle, crs[relevance != "None"]$ShortDescription, crs[relevance != "None"]$LongDescription)))]$relevance <- "None"
+crs[relevance != "None"][PurposeName %in% disqualifying.sectors]$relevance <- "None"
 
-crs$gender <- as.character(crs$gender)
-crs[is.na(gender)]$gender <- "0"
-crs[gender != "1" & gender != "2"]$gender <- "No gender component"
-crs[gender == "1"]$gender <- "Partial gender component"
-crs[gender == "2"]$gender <- "Major gender component"
+crs$Gender <- as.character(crs$Gender)
+crs[is.na(Gender)]$Gender <- "0"
+crs[Gender != "1" & Gender != "2"]$Gender <- "No Gender component"
+crs[Gender == "1"]$Gender <- "Partial Gender component"
+crs[Gender == "2"]$Gender <- "Major Gender component"
 
-save(crs, file="output/crs.RData", compression_level = 9)
+crs_output <- crs
+rm(crs)
 
-crs.years <- dcast.data.table(crs, year ~ relevance, value.var = "usd_disbursement_deflated", fun.aggregate = function (x) sum(x, na.rm=T))
-crs.donors <- dcast.data.table(crs, year + donor_name ~ relevance, value.var = "usd_disbursement_deflated", fun.aggregate = function (x) sum(x, na.rm=T))
-crs.recipients <- dcast.data.table(crs, year + recipient_name ~ relevance, value.var = "usd_disbursement_deflated", fun.aggregate = function (x) sum(x, na.rm=T))
-crs.sectors <- dcast.data.table(crs, year + purpose_name ~ relevance, value.var = "usd_disbursement_deflated", fun.aggregate = function (x) sum(x, na.rm=T))
-crs.flows <- dcast.data.table(crs, year + flow_name ~ relevance, value.var = "usd_disbursement_deflated", fun.aggregate = function (x) sum(x, na.rm=T))
+source("project_code/split_and_save.R")
+split_and_save(crs_output, 3, "output")
+
+crs.years <- dcast.data.table(crs_output, Year ~ relevance, value.var = "USD_Disbursement_Defl", fun.aggregate = function (x) sum(x, na.rm=T))
+crs.donors <- dcast.data.table(crs_output, Year + DonorName ~ relevance, value.var = "USD_Disbursement_Defl", fun.aggregate = function (x) sum(x, na.rm=T))
+crs.recipients <- dcast.data.table(crs_output, Year + RecipientName ~ relevance, value.var = "USD_Disbursement_Defl", fun.aggregate = function (x) sum(x, na.rm=T))
+crs.sectors <- dcast.data.table(crs_output, Year + PurposeName ~ relevance, value.var = "USD_Disbursement_Defl", fun.aggregate = function (x) sum(x, na.rm=T))
+crs.flows <- dcast.data.table(crs_output, Year + FlowName ~ relevance, value.var = "USD_Disbursement_Defl", fun.aggregate = function (x) sum(x, na.rm=T))
 
 fwrite(crs.years, "output/crs years.csv")
 fwrite(crs.sectors, "output/crs sectors.csv")
@@ -111,7 +115,7 @@ fwrite(crs.flows, "output/crs flows.csv")
 fwrite(crs.donors, "output/crs donors.csv")
 fwrite(crs.recipients, "output/crs recipients.csv")
 
-tocheck.positive <- crs[check == "potential false positive"]
-tocheck.negative <- crs[check == "potential false negative"]
+tocheck.positive <- crs_output[check == "potential false positive"]
+tocheck.negative <- crs_output[check == "potential false negative"]
 fwrite(tocheck.positive, "output/crs check positives.csv")
 fwrite(tocheck.negative, "output/crs check negatives.csv")
