@@ -24,5 +24,4 @@ crs <- rbindlist(crs)
 gc()
 
 source("project_code/split_and_save.R")
-
-split_and_save(crs, 4)
+split_and_save(crs)
