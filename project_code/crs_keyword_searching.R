@@ -101,7 +101,7 @@ crs_output <- crs
 rm(crs)
 
 source("project_code/split_and_save.R")
-split_and_save(crs_output, 3, "output")
+split_and_save(crs, "output", 0)
 
 crs.years <- dcast.data.table(crs_output, Year ~ relevance, value.var = "USD_Disbursement_Defl", fun.aggregate = function (x) sum(x, na.rm=T))
 crs.donors <- dcast.data.table(crs_output, Year + DonorName ~ relevance, value.var = "USD_Disbursement_Defl", fun.aggregate = function (x) sum(x, na.rm=T))
