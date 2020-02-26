@@ -16,12 +16,14 @@ for(i in 1:length(downloads)){
   download.file(download, temp, mode="wb", quiet=T)
   filename <- unzip(temp, list=T)$Name
   print(gsub(".txt", "", filename))
-  crs[[i]] <- read.csv(unz(temp, filename), sep="|")
+  unztemp <- unzip(temp, filename)
+  crs[[i]] <- fread(unztemp, fill=T)
   unlink(temp)
+  file.remove(unztemp)
 }
 
 crs <- rbindlist(crs)
 gc()
 
 source("project_code/split_and_save.R")
-split_and_save(crs)
+split_and_save(crs, "project_data", 5)
