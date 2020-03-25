@@ -18,7 +18,7 @@ load_crs <- function(dataname="crs", path="project_data"){
   for(i in 1:length(files)){
     print(paste0("Loading part ", i, " of ", length(files)))
     filepath <- paste0(path, "/", files[i])
-    crs[[i]] <- read.crs(filepath, encoding = 'UTF-8')
+    crs[[i]] <- read.crs(filepath)
   }
   crs <- rbindlist(crs)
   return(crs)
