@@ -4,14 +4,14 @@ load_crs <- function(dataname="crs", path="project_data"){
   files.csv <- list.files(path, pattern=paste0(dataname, "_part.+[.]csv"))
   if(length(files.bz) > 0 & length(files.csv) > 0){
     files <- files.csv
-    read.crs <- function(x){return(fread(x, encoding = 'UTF-8'))}
+    read.crs <- function(x){return(fread(x))}
   } else {
     if(length(files.bz) > 0){
       files <- files.bz
-      read.crs <- function(x){return(read.csv(x, encoding = 'UTF-8'))}
+      read.crs <- function(x){return(read.csv(x))}
     } else {
       files <- files.csv
-      read.crs <- function(x){return(fread(x, encoding = 'UTF-8'))}
+      read.crs <- function(x){return(fread(x))}
     }
   }
   crs <- list()
